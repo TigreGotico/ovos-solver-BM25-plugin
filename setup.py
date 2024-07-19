@@ -45,7 +45,11 @@ def required(requirements_file):
                 if pkg.strip() and not pkg.startswith("#")]
 
 
-PLUGIN_ENTRY_POINT = 'ovos-solver-bm25-plugin=ovos_bm25_solver:BM25Solver'
+PLUGIN_ENTRY_POINTS = [
+    'ovos-solver-bm25-plugin=ovos_bm25_solver:BM25CorpusSolver',
+    'ovos-solver-bm25qa-plugin=ovos_bm25_solver:BM25QACorpusSolver'
+]
+
 setup(
     name='ovos-solver-bm25-plugin',
     version=get_version(),
@@ -57,7 +61,7 @@ setup(
     packages=['ovos_bm25_solver'],
     zip_safe=True,
     keywords='OVOS openvoiceos plugin utterance fallback query',
-    entry_points={'neon.plugin.solver': PLUGIN_ENTRY_POINT},
+    entry_points={'neon.plugin.solver': PLUGIN_ENTRY_POINTS},
     install_requires=required("requirements.txt"),
     long_description=long_desc,
     long_description_content_type='text/markdown'
