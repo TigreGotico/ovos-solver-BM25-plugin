@@ -102,6 +102,23 @@ class BM25QACorpusSolver(BM25CorpusSolver):
             return ". ".join(answers)
 
 
+class SquadQASolver(BM25QACorpusSolver):
+    def __init__(self, config=None):
+        super().__init__(config)
+        self.load_squad_corpus()
+
+    def load_squad_corpus(self):
+        corpus = {}
+        data = requests.get("https://github.com/chrischute/squad/raw/master/data/train-v2.0.json").json()
+        for s in data["data"]:
+            for p in s["paragraphs"]:
+                for qa in p["qas"]:
+                    if "question" in qa and qa["answers"]:
+                        corpus[qa["question"]] = qa["answers"][0]["text"]
+        self.load_corpus(corpus)
+        LOG.info(f"Loaded and indexed {len(corpus)} question-answer pairs from SQuAD dataset")
+
+
 if __name__ == "__main__":
     LOG.set_level("DEBUG")
     # Create your corpus here
@@ -155,7 +172,7 @@ if __name__ == "__main__":
     s = BM25QACorpusSolver({})
     s.load_corpus(corpus)
 
-    query = "is there life on mars"
+    query = "What is the capital of France"
     print("Query:", query)
     print("Answer:", s.spoken_answer(query))
 

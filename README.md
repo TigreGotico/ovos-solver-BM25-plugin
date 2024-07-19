@@ -104,3 +104,17 @@ print("Answer:", answer)
 
 In this example, BM25QACorpusSolver is used to load a large corpus of question-answer pairs from the SQuAD and FreebaseQA datasets. The solver retrieves the best matching answer for the given query.
 
+## SquadQASolver
+
+The SquadQASolver is a subclass of BM25QACorpusSolver that automatically loads and indexes the SQuAD dataset upon initialization.
+
+```python
+solver = SquadQASolver()
+
+query = "What is the capital of France?"
+answer = solver.get_spoken_answer(query)
+print(answer)
+
+# Expected Output:
+# Paris
+```
