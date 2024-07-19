@@ -119,6 +119,22 @@ class SquadQASolver(BM25QACorpusSolver):
         LOG.info(f"Loaded and indexed {len(corpus)} question-answer pairs from SQuAD dataset")
 
 
+class FreebaseQASolver(BM25QACorpusSolver):
+    def __init__(self, config=None):
+        super().__init__(config)
+        self._load_freebase_dataset()
+
+    def _load_freebase_dataset(self):
+        # Convert FreebaseQA data into the required format
+        corpus = {}
+        data = requests.get("https://github.com/kelvin-jiang/FreebaseQA/raw/master/FreebaseQA-train.json").json()
+        for qa in data["Questions"]:
+            q = qa["ProcessedQuestion"]
+            a = qa["Parses"][0]["Answers"][0]["AnswersName"][0]
+            corpus[q] = a
+        self.load_corpus(corpus)
+
+
 if __name__ == "__main__":
     LOG.set_level("DEBUG")
     # Create your corpus here
@@ -141,26 +157,6 @@ if __name__ == "__main__":
     # 2024-07-19 20:03:30.025 - OVOS - __main__:retrieve_from_corpus:37 - DEBUG - Rank 2 (score: 0.481589138507843): a fish is a creature that lives in water and swims
     # a cat is a feline and likes to purr. a fish is a creature that lives in water and swims
 
-    # squad dataset
-    corpus = {}
-    data = requests.get("https://github.com/chrischute/squad/raw/master/data/train-v2.0.json").json()
-    for s in data["data"]:
-        for p in s["paragraphs"]:
-            for qa in p["qas"]:
-                if "question" in qa and qa["answers"]:
-                    corpus[qa["question"]] = qa["answers"][0]["text"]
-    len_squad = len(corpus)
-    print(len_squad, "qa pairs imports from squad dataset")
-
-    # freebase qa
-    data = requests.get("https://github.com/kelvin-jiang/FreebaseQA/raw/master/FreebaseQA-train.json").json()
-    for qa in data["Questions"]:
-        q = qa["ProcessedQuestion"]
-        a = qa["Parses"][0]["Answers"][0]["AnswersName"][0]
-        corpus[q] = a
-    len_freebase = len(corpus) - len_squad
-    print(len_freebase, "qa pairs imports from freebaseQA dataset")
-
     # hotpotqa dataset
     # data = requests.get("http://curtis.ml.cmu.edu/datasets/hotpot/hotpot_dev_fullwiki_v1.json").json()
     # data = requests.get("http://curtis.ml.cmu.edu/datasets/hotpot/hotpot_train_v1.1.json").json()
@@ -169,19 +165,26 @@ if __name__ == "__main__":
     # len_hotpot = len(corpus) - len_squad - len_freebase
     # print(len_hotpot, "qa pairs imported from hotpotqa dataset")
 
-    s = BM25QACorpusSolver({})
-    s.load_corpus(corpus)
+    # s = BM25QACorpusSolver({})
+    # s.load_corpus(corpus)
 
+    s = FreebaseQASolver()
     query = "What is the capital of France"
     print("Query:", query)
     print("Answer:", s.spoken_answer(query))
+    # 2024-07-19 22:31:09.468 - OVOS - __main__:load_corpus:60 - DEBUG - indexed 20357 documents
+    # Query: What is the capital of France
+    # 2024-07-19 22:31:09.468 - OVOS - __main__:retrieve_from_corpus:69 - DEBUG - Rank 1 (score: 5.996074199676514): what is the capital of france
+    # 2024-07-19 22:31:09.469 - OVOS - __main__:retrieve_from_corpus:93 - DEBUG - closest question in corpus: what is the capital of france
+    # Answer: paris
 
-    # 86769 qa pairs imports from squad dataset
-    # 20357 qa pairs imports from freebaseQA dataset
-    # 2024-07-19 21:49:31.360 - OVOS - ovos_plugin_manager.language:create:233 - INFO - Loaded the Language Translation plugin ovos-translate-plugin-server
-    # 2024-07-19 21:49:31.360 - OVOS - ovos_plugin_manager.utils.config:get_plugin_config:40 - DEBUG - Loaded configuration: {'module': 'ovos-translate-plugin-server', 'lang': 'en-us'}
-    # 2024-07-19 21:49:32.759 - OVOS - __main__:load_corpus:61 - DEBUG - indexed 107126 documents
+    s = SquadQASolver()
+    query = "is there life on mars"
+    print("Query:", query)
+    print("Answer:", s.spoken_answer(query))
+    # 2024-07-19 22:31:12.625 - OVOS - __main__:load_corpus:60 - DEBUG - indexed 86769 documents
+    # 2024-07-19 22:31:12.625 - OVOS - __main__:load_squad_corpus:119 - INFO - Loaded and indexed 86769 question-answer pairs from SQuAD dataset
     # Query: is there life on mars
-    # 2024-07-19 21:49:32.760 - OVOS - __main__:retrieve_from_corpus:70 - DEBUG - Rank 1 (score: 6.037893295288086): How is it postulated that Mars life might have evolved?
-    # 2024-07-19 21:49:32.760 - OVOS - __main__:retrieve_from_corpus:94 - DEBUG - closest question in corpus: How is it postulated that Mars life might have evolved?
+    # 2024-07-19 22:31:12.628 - OVOS - __main__:retrieve_from_corpus:69 - DEBUG - Rank 1 (score: 6.334013938903809): How is it postulated that Mars life might have evolved?
+    # 2024-07-19 22:31:12.628 - OVOS - __main__:retrieve_from_corpus:93 - DEBUG - closest question in corpus: How is it postulated that Mars life might have evolved?
     # Answer: similar to Antarctic
