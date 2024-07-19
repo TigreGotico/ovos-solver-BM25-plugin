@@ -1,6 +1,7 @@
-from typing import List, Optional
+from typing import List, Optional, Dict
 
 import bm25s
+import requests
 from ovos_plugin_manager.templates.solvers import QuestionSolver
 from ovos_utils.log import LOG
 
@@ -14,7 +15,7 @@ class BM25CorpusSolver(QuestionSolver):
     def __init__(self, config=None):
         config = config or {"lang": "en-us",
                             "min_conf": 0.4,
-                            "n_answer": 2,
+                            "n_answer": 1,
                             "method": None,
                             "idf_method": None}
         super().__init__(config)
@@ -62,12 +63,35 @@ class BM25CorpusSolver(QuestionSolver):
         # Query the corpus
         query_tokens = bm25s.tokenize(query, stopwords=self.default_lang.split("-")[0])
         # Get top-k results as a tuple of (doc ids, scores). Both are arrays of shape (n_queries, k)
-        results, scores = self.retriever.retrieve(query_tokens, corpus=corpus, k=k)
+        results, scores = self.retriever.retrieve(query_tokens, corpus=self.corpus, k=k)
         for i in range(results.shape[1]):
             doc, score = results[0, i], scores[0, i]
             LOG.debug(f"Rank {i + 1} (score: {score}): {doc}")
             if score >= self.config.get("min_conf", 0.4):
                 yield doc
+
+    def get_spoken_answer(self, query: str, context: Optional[dict] = None) -> str:
+        if self.corpus is None:
+            return None
+        # Query the corpus
+        answers = list(self.retrieve_from_corpus(query, k=self.config.get("n_answer", 1)))
+        if answers:
+            return ". ".join(answers)
+
+
+class BM25QACorpusSolver(BM25CorpusSolver):
+    def __init__(self, config=None):
+        self.answers = {}
+        super().__init__(config)
+
+    def load_corpus(self, corpus: Dict):
+        self.answers = corpus
+        super().load_corpus(list(self.answers.keys()))
+
+    def retrieve_from_corpus(self, query, k=1) -> str:
+        for q in super().retrieve_from_corpus(query, k):
+            LOG.debug(f"closest question in corpus: {q}")
+            yield self.answers[q]
 
     def get_spoken_answer(self, query: str, context: Optional[dict] = None) -> str:
         if self.corpus is None:
@@ -99,3 +123,48 @@ if __name__ == "__main__":
     # 2024-07-19 20:03:30.025 - OVOS - __main__:retrieve_from_corpus:37 - DEBUG - Rank 1 (score: 1.0584375858306885): a cat is a feline and likes to purr
     # 2024-07-19 20:03:30.025 - OVOS - __main__:retrieve_from_corpus:37 - DEBUG - Rank 2 (score: 0.481589138507843): a fish is a creature that lives in water and swims
     # a cat is a feline and likes to purr. a fish is a creature that lives in water and swims
+
+    # squad dataset
+    corpus = {}
+    data = requests.get("https://github.com/chrischute/squad/raw/master/data/train-v2.0.json").json()
+    for s in data["data"]:
+        for p in s["paragraphs"]:
+            for qa in p["qas"]:
+                if "question" in qa and qa["answers"]:
+                    corpus[qa["question"]] = qa["answers"][0]["text"]
+    len_squad = len(corpus)
+    print(len_squad, "qa pairs imports from squad dataset")
+
+    # freebase qa
+    data = requests.get("https://github.com/kelvin-jiang/FreebaseQA/raw/master/FreebaseQA-train.json").json()
+    for qa in data["Questions"]:
+        q = qa["ProcessedQuestion"]
+        a = qa["Parses"][0]["Answers"][0]["AnswersName"][0]
+        corpus[q] = a
+    len_freebase = len(corpus) - len_squad
+    print(len_freebase, "qa pairs imports from freebaseQA dataset")
+
+    # hotpotqa dataset
+    # data = requests.get("http://curtis.ml.cmu.edu/datasets/hotpot/hotpot_dev_fullwiki_v1.json").json()
+    # data = requests.get("http://curtis.ml.cmu.edu/datasets/hotpot/hotpot_train_v1.1.json").json()
+    # for qa in data:
+    #    corpus[qa["question"]] = qa["answer"]
+    # len_hotpot = len(corpus) - len_squad - len_freebase
+    # print(len_hotpot, "qa pairs imported from hotpotqa dataset")
+
+    s = BM25QACorpusSolver({})
+    s.load_corpus(corpus)
+
+    query = "is there life on mars"
+    print("Query:", query)
+    print("Answer:", s.spoken_answer(query))
+
+    # 86769 qa pairs imports from squad dataset
+    # 20357 qa pairs imports from freebaseQA dataset
+    # 2024-07-19 21:49:31.360 - OVOS - ovos_plugin_manager.language:create:233 - INFO - Loaded the Language Translation plugin ovos-translate-plugin-server
+    # 2024-07-19 21:49:31.360 - OVOS - ovos_plugin_manager.utils.config:get_plugin_config:40 - DEBUG - Loaded configuration: {'module': 'ovos-translate-plugin-server', 'lang': 'en-us'}
+    # 2024-07-19 21:49:32.759 - OVOS - __main__:load_corpus:61 - DEBUG - indexed 107126 documents
+    # Query: is there life on mars
+    # 2024-07-19 21:49:32.760 - OVOS - __main__:retrieve_from_corpus:70 - DEBUG - Rank 1 (score: 6.037893295288086): How is it postulated that Mars life might have evolved?
+    # 2024-07-19 21:49:32.760 - OVOS - __main__:retrieve_from_corpus:94 - DEBUG - closest question in corpus: How is it postulated that Mars life might have evolved?
+    # Answer: similar to Antarctic
