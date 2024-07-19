@@ -1,24 +1,56 @@
-from typing import List, Iterable, Optional
-from ovos_plugin_manager.templates.solvers import MultipleChoiceSolver, QuestionSolver
-from ovos_utils.log import LOG
+from typing import List, Optional
 
 import bm25s
+from ovos_plugin_manager.templates.solvers import QuestionSolver
+from ovos_utils.log import LOG
 
 
 class BM25CorpusSolver(QuestionSolver):
     enable_tx = False
     priority = 60
+    METHODS = ["robertson", "lucene", "bm25l", "bm25+", "atire", "rank-bm25", "bm25-pt"]
+    IDF_METHODS = ['robertson', 'lucene', 'atire', 'bm25l', 'bm25+']
 
     def __init__(self, config=None):
         config = config or {"lang": "en-us",
                             "min_conf": 0.4,
-                            "n_answer": 2}
+                            "n_answer": 2,
+                            "method": None,
+                            "idf_method": None}
         super().__init__(config)
         # Create the BM25 model
-        self.retriever = bm25s.BM25()
+        self.retriever = None
         self.corpus = None
 
+    @property
+    def method(self):
+        m = self.config.get("method")
+        if m is None:
+            return None
+        if m not in self.METHODS:
+            LOG.warning(f"{m} is not a valid method, choose one of {self.METHODS}")
+            m = None
+        return m
+
+    @property
+    def idf_method(self):
+        m = self.config.get("idf_method")
+        if m is None:
+            return None
+        if m not in self.IDF_METHODS:
+            LOG.warning(f"{m} is not a valid method, choose one of {self.IDF_METHODS}")
+            m = "lucene"
+        return m
+
     def load_corpus(self, corpus: List[str]):
+        if self.method == "rank-bm25":
+            self.retriever = bm25s.BM25(method="atire", idf_method="robertson")
+        elif self.method == "bm25-pt":
+            self.retriever = bm25s.BM25(method="atire", idf_method="lucene")
+        elif self.method is not None:
+            self.retriever = bm25s.BM25(method=self.method, idf_method=self.idf_method)
+        else:
+            self.retriever = bm25s.BM25()
         self.corpus = corpus
         # Tokenize the corpus and only keep the ids (faster and saves memory)
         corpus_tokens = bm25s.tokenize(corpus, stopwords=self.default_lang.split("-")[0])
@@ -26,7 +58,7 @@ class BM25CorpusSolver(QuestionSolver):
         self.retriever.index(corpus_tokens)
         LOG.debug(f"indexed {len(corpus)} documents")
 
-    def retrieve_from_corpus(self,query,  k=3) -> str:
+    def retrieve_from_corpus(self, query, k=3) -> str:
         # Query the corpus
         query_tokens = bm25s.tokenize(query, stopwords=self.default_lang.split("-")[0])
         # Get top-k results as a tuple of (doc ids, scores). Both are arrays of shape (n_queries, k)
@@ -56,7 +88,7 @@ if __name__ == "__main__":
         "a fish is a creature that lives in water and swims",
     ]
 
-    s = BM25CorpusSolver()
+    s = BM25CorpusSolver({})
     s.load_corpus(corpus)
 
     query = "does the fish purr like a cat?"
