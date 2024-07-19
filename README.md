@@ -25,10 +25,52 @@ pip install ovos-plugin-manager ovos-utils bm25s
 
 To use the BM25CorpusSolver, you need to create an instance of the solver, load your corpus, and then query it.
 
-You can customize the solver's configuration by passing a dictionary during initialization:
+### SquadQASolver
+
+The SquadQASolver is a subclass of BM25QACorpusSolver that automatically loads and indexes the [SQuAD dataset](https://rajpurkar.github.io/SQuAD-explorer/) upon
+initialization.
+
+This solver is suitable for usage with ovos-persona framework
+
+```python
+from ovos_bm25_solver import SquadQASolver
+
+s = SquadQASolver()
+query = "is there life on mars"
+print("Query:", query)
+print("Answer:", s.spoken_answer(query))
+# 2024-07-19 22:31:12.625 - OVOS - __main__:load_corpus:60 - DEBUG - indexed 86769 documents
+# 2024-07-19 22:31:12.625 - OVOS - __main__:load_squad_corpus:119 - INFO - Loaded and indexed 86769 question-answer pairs from SQuAD dataset
+# Query: is there life on mars
+# 2024-07-19 22:31:12.628 - OVOS - __main__:retrieve_from_corpus:69 - DEBUG - Rank 1 (score: 6.334013938903809): How is it postulated that Mars life might have evolved?
+# 2024-07-19 22:31:12.628 - OVOS - __main__:retrieve_from_corpus:93 - DEBUG - closest question in corpus: How is it postulated that Mars life might have evolved?
+# Answer: similar to Antarctic
+```
+
+### FreebaseQASolver
+
+The FreebaseQASolver is a subclass of BM25QACorpusSolver that automatically loads and indexes the [FreebaseQA dataset](https://github.com/kelvin-jiang/FreebaseQA) upon
+initialization.
+
+This solver is suitable for usage with ovos-persona framework
+
+```python
+from ovos_bm25_solver import FreebaseQASolver
+
+s = FreebaseQASolver()
+query = "What is the capital of France"
+print("Query:", query)
+print("Answer:", s.spoken_answer(query))
+# 2024-07-19 22:31:09.468 - OVOS - __main__:load_corpus:60 - DEBUG - indexed 20357 documents
+# Query: What is the capital of France
+# 2024-07-19 22:31:09.468 - OVOS - __main__:retrieve_from_corpus:69 - DEBUG - Rank 1 (score: 5.996074199676514): what is the capital of france
+# 2024-07-19 22:31:09.469 - OVOS - __main__:retrieve_from_corpus:93 - DEBUG - closest question in corpus: what is the capital of france
+# Answer: paris
+```
 
 ### BM25CorpusSolver Example
 
+This class is meant to be used to create your own solvers with a dedicated corpus
 ```python
 from ovos_bm25_solver import BM25CorpusSolver
 
@@ -60,6 +102,8 @@ print(answer)
 ```
 
 ### BM25QACorpusSolver Example
+
+This class is meant to be used to create your own solvers with a dedicated corpus
 
 BM25QACorpusSolver is an extension of BM25CorpusSolver, designed to work with question-answer pairs. It is particularly
 useful when working with datasets like SQuAD, FreebaseQA, or similar QA datasets.
@@ -113,45 +157,39 @@ print("Answer:", answer)
 In this example, BM25QACorpusSolver is used to load a large corpus of question-answer pairs from the SQuAD and
 FreebaseQA datasets. The solver retrieves the best matching answer for the given query.
 
-### SquadQASolver
+## Integrating with Persona Framework
 
-The SquadQASolver is a subclass of BM25QACorpusSolver that automatically loads and indexes the [SQuAD dataset](https://rajpurkar.github.io/SQuAD-explorer/) upon
-initialization.
+To use the `SquadQASolver` and `FreebaseQASolver` in the persona framework, you can define a persona configuration file and specify the solvers to be used.
 
-This solver is suitable for usage with ovos-persona framework
+Here's an example of how to define a persona that uses the `SquadQASolver` and `FreebaseQASolver`:
 
-```python
-from ovos_bm25_solver import SquadQASolver
+1. Create a persona configuration file, e.g., `qa_persona.json`:
 
-s = SquadQASolver()
-query = "is there life on mars"
-print("Query:", query)
-print("Answer:", s.spoken_answer(query))
-# 2024-07-19 22:31:12.625 - OVOS - __main__:load_corpus:60 - DEBUG - indexed 86769 documents
-# 2024-07-19 22:31:12.625 - OVOS - __main__:load_squad_corpus:119 - INFO - Loaded and indexed 86769 question-answer pairs from SQuAD dataset
-# Query: is there life on mars
-# 2024-07-19 22:31:12.628 - OVOS - __main__:retrieve_from_corpus:69 - DEBUG - Rank 1 (score: 6.334013938903809): How is it postulated that Mars life might have evolved?
-# 2024-07-19 22:31:12.628 - OVOS - __main__:retrieve_from_corpus:93 - DEBUG - closest question in corpus: How is it postulated that Mars life might have evolved?
-# Answer: similar to Antarctic
+```json
+{
+  "name": "QAPersona",
+  "solvers": [
+    "ovos-solver-squadqa-plugin",
+    "ovos-solver-freebaseqa-plugin",
+    "ovos-solver-failure-plugin"
+  ]
+}
 ```
 
-### FreebaseQASolver
+2. Run [ovos-persona-server](https://github.com/OpenVoiceOS/ovos-persona-server) with the defined persona:
 
-The FreebaseQASolver is a subclass of BM25QACorpusSolver that automatically loads and indexes the [FreebaseQA dataset](https://github.com/kelvin-jiang/FreebaseQA) upon
-initialization.
+```bash
+$ ovos-persona-server --persona qa_persona.json
+```
 
-This solver is suitable for usage with ovos-persona framework
+In this example, the persona named "QAPersona" will first use the `SquadQASolver` to answer questions. If it cannot find an answer, it will fall back to the `FreebaseQASolver`. Finally, it will use the `ovos-solver-failure-plugin` to ensure it always responds with something, even if the previous solvers fail.
+
+
+Check setup.py for reference in how to package your own corpus backed solvers
 
 ```python
-from ovos_bm25_solver import FreebaseQASolver
-
-s = FreebaseQASolver()
-query = "What is the capital of France"
-print("Query:", query)
-print("Answer:", s.spoken_answer(query))
-# 2024-07-19 22:31:09.468 - OVOS - __main__:load_corpus:60 - DEBUG - indexed 20357 documents
-# Query: What is the capital of France
-# 2024-07-19 22:31:09.468 - OVOS - __main__:retrieve_from_corpus:69 - DEBUG - Rank 1 (score: 5.996074199676514): what is the capital of france
-# 2024-07-19 22:31:09.469 - OVOS - __main__:retrieve_from_corpus:93 - DEBUG - closest question in corpus: what is the capital of france
-# Answer: paris
+PLUGIN_ENTRY_POINTS = [
+    'ovos-solver-bm25-squad-plugin=ovos_bm25_solver:SquadQASolver',
+    'ovos-solver-bm25-freebase-plugin=ovos_bm25_solver:FreebaseQASolver'
+]
 ```
