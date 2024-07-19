@@ -47,7 +47,9 @@ def required(requirements_file):
 
 PLUGIN_ENTRY_POINTS = [
     'ovos-solver-bm25-plugin=ovos_bm25_solver:BM25CorpusSolver',
-    'ovos-solver-bm25qa-plugin=ovos_bm25_solver:BM25QACorpusSolver'
+    'ovos-solver-bm25qa-plugin=ovos_bm25_solver:BM25QACorpusSolver',
+    'ovos-solver-bm25-squad-plugin=ovos_bm25_solver:SquadQASolver',
+    'ovos-solver-bm25-freebase-plugin=ovos_bm25_solver:FreebaseQASolver'
 ]
 
 setup(
