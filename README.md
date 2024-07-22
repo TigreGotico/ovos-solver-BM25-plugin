@@ -4,6 +4,21 @@ BM25CorpusSolver is an OVOS (OpenVoiceOS) plugin designed to retrieve answers fr
 algorithm. This solver is ideal for question-answering systems that require efficient and accurate retrieval of
 information from a predefined set of documents.
 
+- [Features](#features)
+- [Retrieval Chatbots](#retrieval-chatbots)
+   - [Example Solvers](#example-solvers)
+     - [SquadQASolver](#squadqasolver)
+     - [FreebaseQASolver](#freebaseqasolver)
+  - [Implementing a Retrieval Chatbot](#implementing-a-retrieval-chatbot)
+     - [BM25CorpusSolver](#bm25corpussolver)
+     - [BM25QACorpusSolver](#bm25qacorpussolver)
+  - [Limitations of Retrieval Chatbots](#limitations-of-retrieval-chatbots)
+- [ReRanking](#reranking)
+   - [BM25MultipleChoiceSolver](#bm25multiplechoicesolver)
+   - [BM25EvidenceSolverPlugin](#bm25evidencesolverplugin)
+- [Integrating with Persona Framework](#integrating-with-persona-framework)
+
+
 ## Features
 
 - **BM25 Algorithm**: Utilizes the BM25 ranking function for information retrieval, providing relevance-based document scoring.
