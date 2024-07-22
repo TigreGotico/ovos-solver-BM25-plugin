@@ -1,17 +1,17 @@
 # BM25CorpusSolver Plugin
 
-BM25CorpusSolver is an OVOS (OpenVoiceOS) plugin designed to retrieve answers from a corpus of documents using the BM25
+BM25CorpusSolver is an OVOS (OpenVoiceOS) plugin designed to retrieve answers from a corpus of documents using the [BM25](https://en.wikipedia.org/wiki/Okapi_BM25)
 algorithm. This solver is ideal for question-answering systems that require efficient and accurate retrieval of
 information from a predefined set of documents.
 
 ## Features
 
-- **BM25 Algorithm**: Utilizes the BM25 ranking function for information retrieval, providing relevance-based document
-  scoring.
+- **BM25 Algorithm**: Utilizes the BM25 ranking function for information retrieval, providing relevance-based document scoring.
 - **Configurable**: Allows customization of language, minimum confidence score, and the number of answers to retrieve.
 - **Logging**: Integrates with OVOS logging system for debugging and monitoring.
-- **BM25QACorpusSolver**: Extends `BM25CorpusSolver` to handle question-answer pairs, optimizing the retrieval process
-  for QA datasets.
+- **BM25QACorpusSolver**: Extends `BM25CorpusSolver` to handle question-answer pairs, optimizing the retrieval process for QA datasets.
+- **BM25MultipleChoiceSolver**: Reranks multiple-choice options based on relevance to the query.
+- **BM25EvidenceSolverPlugin**: Extracts the best sentence from a text that answers a question using the BM25 algorithm.
 
 ## Installation
 
@@ -68,7 +68,7 @@ print("Answer:", s.spoken_answer(query))
 # Answer: paris
 ```
 
-### BM25CorpusSolver Example
+### BM25CorpusSolver
 
 This class is meant to be used to create your own solvers with a dedicated corpus
 ```python
@@ -101,7 +101,7 @@ print(answer)
 # a cat is a feline and likes to purr. a fish is a creature that lives in water and swims
 ```
 
-### BM25QACorpusSolver Example
+### BM25QACorpusSolver
 
 This class is meant to be used to create your own solvers with a dedicated corpus
 
@@ -157,6 +157,59 @@ print("Answer:", answer)
 In this example, BM25QACorpusSolver is used to load a large corpus of question-answer pairs from the SQuAD and
 FreebaseQA datasets. The solver retrieves the best matching answer for the given query.
 
+## BM25MultipleChoiceSolver
+
+BM25MultipleChoiceSolver is designed to select the best answer to a question from a list of options.
+
+```python
+solver = BM25MultipleChoiceSolver()
+a = solver.rerank("what is the speed of light", [
+    "very fast", "10m/s", "the speed of light is C"
+])
+print(a)
+# 2024-07-22 15:03:10.295 - OVOS - __main__:load_corpus:61 - DEBUG - indexed 3 documents
+# 2024-07-22 15:03:10.297 - OVOS - __main__:retrieve_from_corpus:70 - DEBUG - Rank 1 (score: 0.7198746800422668): the speed of light is C
+# 2024-07-22 15:03:10.297 - OVOS - __main__:retrieve_from_corpus:70 - DEBUG - Rank 2 (score: 0.0): 10m/s
+# 2024-07-22 15:03:10.297 - OVOS - __main__:retrieve_from_corpus:70 - DEBUG - Rank 3 (score: 0.0): very fast
+# [(0.7198747, 'the speed of light is C'), (0.0, '10m/s'), (0.0, 'very fast')]
+
+a = p.select_answer("what is the speed of light", [
+    "very fast", "10m/s", "the speed of light is C"
+])
+print(a) # the speed of light is C
+```
+
+## BM25EvidenceSolverPlugin
+
+BM25EvidenceSolverPlugin is designed to find the best sentence from a text passage that answers a given question.
+
+```python
+config = {
+    "lang": "en-us",
+    "min_conf": 0.4,
+    "n_answer": 1
+}
+solver = BM25EvidenceSolverPlugin(config)
+
+text = """Mars is the fourth planet from the Sun. It is a dusty, cold, desert world with a very thin atmosphere. 
+Mars is also a dynamic planet with seasons, polar ice caps, canyons, extinct volcanoes, and evidence that it was even more active in the past.
+Mars is one of the most explored bodies in our solar system, and it's the only planet where we've sent rovers to roam the alien landscape. 
+NASA currently has two rovers (Curiosity and Perseverance), one lander (InSight), and one helicopter (Ingenuity) exploring the surface of Mars.
+"""
+query = "how many rovers are currently exploring Mars"
+answer = solver.get_best_passage(evidence=text, question=query)
+print("Query:", query)
+print("Answer:", answer)
+# 2024-07-22 15:05:14.209 - OVOS - __main__:load_corpus:61 - DEBUG - indexed 5 documents
+# 2024-07-22 15:05:14.209 - OVOS - __main__:retrieve_from_corpus:70 - DEBUG - Rank 1 (score: 1.39238703250885): NASA currently has two rovers (Curiosity and Perseverance), one lander (InSight), and one helicopter (Ingenuity) exploring the surface of Mars.
+# 2024-07-22 15:05:14.210 - OVOS - __main__:retrieve_from_corpus:70 - DEBUG - Rank 2 (score: 0.38667747378349304): Mars is one of the most explored bodies in our solar system, and it's the only planet where we've sent rovers to roam the alien landscape.
+# 2024-07-22 15:05:14.210 - OVOS - __main__:retrieve_from_corpus:70 - DEBUG - Rank 3 (score: 0.15732118487358093): Mars is the fourth planet from the Sun.
+# 2024-07-22 15:05:14.210 - OVOS - __main__:retrieve_from_corpus:70 - DEBUG - Rank 4 (score: 0.10177625715732574): Mars is also a dynamic planet with seasons, polar ice caps, canyons, extinct volcanoes, and evidence that it was even more active in the past.
+# 2024-07-22 15:05:14.210 - OVOS - __main__:retrieve_from_corpus:70 - DEBUG - Rank 5 (score: 0.0): It is a dusty, cold, desert world with a very thin atmosphere.
+# Query: how many rovers are currently exploring Mars
+# Answer: NASA currently has two rovers (Curiosity and Perseverance), one lander (InSight), and one helicopter (Ingenuity) exploring the surface of Mars.
+
+```
 ## Integrating with Persona Framework
 
 To use the `SquadQASolver` and `FreebaseQASolver` in the persona framework, you can define a persona configuration file and specify the solvers to be used.

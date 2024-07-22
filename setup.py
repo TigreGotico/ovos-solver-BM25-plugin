@@ -49,6 +49,8 @@ PLUGIN_ENTRY_POINTS = [
     'ovos-solver-bm25-squad-plugin=ovos_bm25_solver:SquadQASolver',
     'ovos-solver-bm25-freebase-plugin=ovos_bm25_solver:FreebaseQASolver'
 ]
+EVIDENCE_ENTRY_POINT = 'ovos-evidence-solver-bm25=ovos_classifiers.opm.heuristics:BM25SolverPlugin'
+RERANKER_ENTRY_POINT = 'ovos-choice-solver-bm25=ovos_classifiers.opm.heuristics:BM25MultipleChoiceSolver'
 
 setup(
     name='ovos-solver-bm25-plugin',
@@ -61,7 +63,9 @@ setup(
     packages=['ovos_bm25_solver'],
     zip_safe=True,
     keywords='OVOS openvoiceos plugin utterance fallback query',
-    entry_points={'neon.plugin.solver': PLUGIN_ENTRY_POINTS},
+    entry_points={'neon.plugin.solver': PLUGIN_ENTRY_POINTS,
+                  "opm.solver.reading_comprehension": EVIDENCE_ENTRY_POINT,
+                  "opm.solver.multiple_choice": RERANKER_ENTRY_POINT},
     install_requires=required("requirements.txt"),
     long_description=long_desc,
     long_description_content_type='text/markdown'
