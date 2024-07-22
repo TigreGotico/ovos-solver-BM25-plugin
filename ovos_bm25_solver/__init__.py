@@ -1,9 +1,10 @@
-from typing import List, Optional, Dict
+from typing import List, Optional, Dict, Tuple
 
 import bm25s
 import requests
-from ovos_plugin_manager.templates.solvers import QuestionSolver
+from ovos_plugin_manager.templates.solvers import QuestionSolver, MultipleChoiceSolver, EvidenceSolver
 from ovos_utils.log import LOG
+from quebra_frases import sentence_tokenize
 
 
 class BM25CorpusSolver(QuestionSolver):
@@ -14,7 +15,7 @@ class BM25CorpusSolver(QuestionSolver):
 
     def __init__(self, config=None):
         config = config or {"lang": "en-us",
-                            "min_conf": 0.4,
+                            "min_conf": None,
                             "n_answer": 1,
                             "method": None,
                             "idf_method": None}
@@ -67,14 +68,17 @@ class BM25CorpusSolver(QuestionSolver):
         for i in range(results.shape[1]):
             doc, score = results[0, i], scores[0, i]
             LOG.debug(f"Rank {i + 1} (score: {score}): {doc}")
-            if score >= self.config.get("min_conf", 0.4):
-                yield doc
+            if self.config.get("min_conf"):
+                if score >= self.config["min_conf"]:
+                    yield doc, score
+            else:
+                yield doc, score
 
     def get_spoken_answer(self, query: str, context: Optional[dict] = None) -> str:
         if self.corpus is None:
             return None
         # Query the corpus
-        answers = list(self.retrieve_from_corpus(query, k=self.config.get("n_answer", 1)))
+        answers = [a[0] for a in self.retrieve_from_corpus(query, k=self.config.get("n_answer", 1))]
         if answers:
             return ". ".join(answers)
 
@@ -89,7 +93,7 @@ class BM25QACorpusSolver(BM25CorpusSolver):
         super().load_corpus(list(self.answers.keys()))
 
     def retrieve_from_corpus(self, query, k=1) -> str:
-        for q in super().retrieve_from_corpus(query, k):
+        for q, score in super().retrieve_from_corpus(query, k):
             LOG.debug(f"closest question in corpus: {q}")
             yield self.answers[q]
 
@@ -102,6 +106,39 @@ class BM25QACorpusSolver(BM25CorpusSolver):
             return ". ".join(answers)
 
 
+class BM25MultipleChoiceSolver(MultipleChoiceSolver):
+    """select best answer to a question from a list of options """
+
+    # plugin methods to override
+    def rerank(self, query: str, options: List[str],
+               context: Optional[dict] = None) -> List[Tuple[float, str]]:
+        """
+        rank options list, returning a list of tuples (score, text)
+        """
+        bm25 = BM25CorpusSolver()
+        bm25.load_corpus(options)
+        return [
+            (score, doc) for doc, score in bm25.retrieve_from_corpus(query, k=len(options))
+        ]
+
+
+class BM25EvidenceSolverPlugin(EvidenceSolver):
+    """extract best sentence from text that answers the question, using BM25 algorithm"""
+
+    def get_best_passage(self, evidence, question, context=None):
+        """
+        evidence and question assured to be in self.default_lang
+         returns summary of provided document
+        """
+        bm25 = BM25MultipleChoiceSolver()
+        sents = []
+        for s in evidence.split("\n"):
+            sents += sentence_tokenize(s)
+        sents = [s.strip() for s in sents if s]
+        return bm25.select_answer(question, sents, context)
+
+
+## Demo subclasses
 class SquadQASolver(BM25QACorpusSolver):
     def __init__(self, config=None):
         super().__init__(config)
@@ -137,6 +174,47 @@ class FreebaseQASolver(BM25QACorpusSolver):
 
 if __name__ == "__main__":
     LOG.set_level("DEBUG")
+    p = BM25MultipleChoiceSolver()
+    a = p.rerank("what is the speed of light", [
+        "very fast", "10m/s", "the speed of light is C"
+    ])
+    print(a)
+    # 2024-07-22 15:03:10.295 - OVOS - __main__:load_corpus:61 - DEBUG - indexed 3 documents
+    # 2024-07-22 15:03:10.297 - OVOS - __main__:retrieve_from_corpus:70 - DEBUG - Rank 1 (score: 0.7198746800422668): the speed of light is C
+    # 2024-07-22 15:03:10.297 - OVOS - __main__:retrieve_from_corpus:70 - DEBUG - Rank 2 (score: 0.0): 10m/s
+    # 2024-07-22 15:03:10.297 - OVOS - __main__:retrieve_from_corpus:70 - DEBUG - Rank 3 (score: 0.0): very fast
+    # [(0.7198747, 'the speed of light is C'), (0.0, '10m/s'), (0.0, 'very fast')]
+
+    a = p.select_answer("what is the speed of light", [
+        "very fast", "10m/s", "the speed of light is C"
+    ])
+    print(a)  # the speed of light is C
+
+    config = {
+        "lang": "en-us",
+        "min_conf": 0.4,
+        "n_answer": 1
+    }
+    solver = BM25EvidenceSolverPlugin(config)
+
+    text = """Mars is the fourth planet from the Sun. It is a dusty, cold, desert world with a very thin atmosphere. 
+Mars is also a dynamic planet with seasons, polar ice caps, canyons, extinct volcanoes, and evidence that it was even more active in the past.
+Mars is one of the most explored bodies in our solar system, and it's the only planet where we've sent rovers to roam the alien landscape. 
+NASA currently has two rovers (Curiosity and Perseverance), one lander (InSight), and one helicopter (Ingenuity) exploring the surface of Mars.
+"""
+    query = "how many rovers are currently exploring Mars"
+    answer = solver.get_best_passage(evidence=text, question=query)
+    print("Query:", query)
+    print("Answer:", answer)
+    # 2024-07-22 15:05:14.209 - OVOS - __main__:load_corpus:61 - DEBUG - indexed 5 documents
+    # 2024-07-22 15:05:14.209 - OVOS - __main__:retrieve_from_corpus:70 - DEBUG - Rank 1 (score: 1.39238703250885): NASA currently has two rovers (Curiosity and Perseverance), one lander (InSight), and one helicopter (Ingenuity) exploring the surface of Mars.
+    # 2024-07-22 15:05:14.210 - OVOS - __main__:retrieve_from_corpus:70 - DEBUG - Rank 2 (score: 0.38667747378349304): Mars is one of the most explored bodies in our solar system, and it's the only planet where we've sent rovers to roam the alien landscape.
+    # 2024-07-22 15:05:14.210 - OVOS - __main__:retrieve_from_corpus:70 - DEBUG - Rank 3 (score: 0.15732118487358093): Mars is the fourth planet from the Sun.
+    # 2024-07-22 15:05:14.210 - OVOS - __main__:retrieve_from_corpus:70 - DEBUG - Rank 4 (score: 0.10177625715732574): Mars is also a dynamic planet with seasons, polar ice caps, canyons, extinct volcanoes, and evidence that it was even more active in the past.
+    # 2024-07-22 15:05:14.210 - OVOS - __main__:retrieve_from_corpus:70 - DEBUG - Rank 5 (score: 0.0): It is a dusty, cold, desert world with a very thin atmosphere.
+    # Query: how many rovers are currently exploring Mars
+    # Answer: NASA currently has two rovers (Curiosity and Perseverance), one lander (InSight), and one helicopter (Ingenuity) exploring the surface of Mars.
+
     # Create your corpus here
     corpus = [
         "a cat is a feline and likes to purr",
