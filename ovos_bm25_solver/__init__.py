@@ -1,4 +1,4 @@
-from typing import List, Optional, Dict, Tuple
+from typing import List, Optional, Iterable, Dict, Tuple
 
 import bm25s
 import requests
@@ -60,7 +60,7 @@ class BM25CorpusSolver(QuestionSolver):
         self.retriever.index(corpus_tokens)
         LOG.debug(f"indexed {len(corpus)} documents")
 
-    def retrieve_from_corpus(self, query, k=3) -> str:
+    def retrieve_from_corpus(self, query, k=3) -> Iterable[Tuple[float, str]]:
         # Query the corpus
         query_tokens = bm25s.tokenize(query, stopwords=self.default_lang.split("-")[0])
         # Get top-k results as a tuple of (doc ids, scores). Both are arrays of shape (n_queries, k)
@@ -70,17 +70,17 @@ class BM25CorpusSolver(QuestionSolver):
             LOG.debug(f"Rank {i + 1} (score: {score}): {doc}")
             if self.config.get("min_conf"):
                 if score >= self.config["min_conf"]:
-                    yield doc, score
+                    yield score, doc
             else:
-                yield doc, score
+                yield score, doc
 
     def get_spoken_answer(self, query: str, context: Optional[dict] = None) -> str:
         if self.corpus is None:
             return None
         # Query the corpus
-        answers = [a[0] for a in self.retrieve_from_corpus(query, k=self.config.get("n_answer", 1))]
+        answers = [a[1] for a in self.retrieve_from_corpus(query, k=self.config.get("n_answer", 1))]
         if answers:
-            return ". ".join(answers)
+            return ". ".join(answers[:self.config.get("n_answer", 1)])
 
 
 class BM25QACorpusSolver(BM25CorpusSolver):
@@ -92,18 +92,10 @@ class BM25QACorpusSolver(BM25CorpusSolver):
         self.answers = corpus
         super().load_corpus(list(self.answers.keys()))
 
-    def retrieve_from_corpus(self, query, k=1) -> str:
-        for q, score in super().retrieve_from_corpus(query, k):
+    def retrieve_from_corpus(self, query, k=1) -> Iterable[Tuple[float, str]]:
+        for score, q in super().retrieve_from_corpus(query, k):
             LOG.debug(f"closest question in corpus: {q}")
-            yield self.answers[q]
-
-    def get_spoken_answer(self, query: str, context: Optional[dict] = None) -> str:
-        if self.corpus is None:
-            return None
-        # Query the corpus
-        answers = list(self.retrieve_from_corpus(query, k=self.config.get("n_answer", 1)))
-        if answers:
-            return ". ".join(answers)
+            yield score, self.answers[q]
 
 
 class BM25MultipleChoiceSolver(MultipleChoiceSolver):
@@ -117,9 +109,7 @@ class BM25MultipleChoiceSolver(MultipleChoiceSolver):
         """
         bm25 = BM25CorpusSolver()
         bm25.load_corpus(options)
-        return [
-            (score, doc) for doc, score in bm25.retrieve_from_corpus(query, k=len(options))
-        ]
+        return list(bm25.retrieve_from_corpus(query, k=len(options)))
 
 
 class BM25EvidenceSolverPlugin(EvidenceSolver):
@@ -139,7 +129,7 @@ class BM25EvidenceSolverPlugin(EvidenceSolver):
 
 
 ## Demo subclasses
-class SquadQASolver(BM25QACorpusSolver):
+class BM25SquadQASolver(BM25QACorpusSolver):
     def __init__(self, config=None):
         super().__init__(config)
         self.load_squad_corpus()
@@ -156,7 +146,7 @@ class SquadQASolver(BM25QACorpusSolver):
         LOG.info(f"Loaded and indexed {len(corpus)} question-answer pairs from SQuAD dataset")
 
 
-class FreebaseQASolver(BM25QACorpusSolver):
+class BM25FreebaseQASolver(BM25QACorpusSolver):
     def __init__(self, config=None):
         super().__init__(config)
         self._load_freebase_dataset()
@@ -246,7 +236,7 @@ NASA currently has two rovers (Curiosity and Perseverance), one lander (InSight)
     # s = BM25QACorpusSolver({})
     # s.load_corpus(corpus)
 
-    s = FreebaseQASolver()
+    s = BM25FreebaseQASolver()
     query = "What is the capital of France"
     print("Query:", query)
     print("Answer:", s.spoken_answer(query))
@@ -256,7 +246,7 @@ NASA currently has two rovers (Curiosity and Perseverance), one lander (InSight)
     # 2024-07-19 22:31:09.469 - OVOS - __main__:retrieve_from_corpus:93 - DEBUG - closest question in corpus: what is the capital of france
     # Answer: paris
 
-    s = SquadQASolver()
+    s = BM25SquadQASolver()
     query = "is there life on mars"
     print("Query:", query)
     print("Answer:", s.spoken_answer(query))

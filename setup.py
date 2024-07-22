@@ -46,11 +46,11 @@ def required(requirements_file):
 
 
 PLUGIN_ENTRY_POINTS = [
-    'ovos-solver-bm25-squad-plugin=ovos_bm25_solver:SquadQASolver',
-    'ovos-solver-bm25-freebase-plugin=ovos_bm25_solver:FreebaseQASolver'
+    'ovos-solver-bm25-squad-plugin=ovos_bm25_solver:BM25SquadQASolver',
+    'ovos-solver-bm25-freebase-plugin=ovos_bm25_solver:BM25FreebaseQASolver'
 ]
-EVIDENCE_ENTRY_POINT = 'ovos-evidence-solver-bm25=ovos_classifiers.opm.heuristics:BM25SolverPlugin'
-RERANKER_ENTRY_POINT = 'ovos-choice-solver-bm25=ovos_classifiers.opm.heuristics:BM25MultipleChoiceSolver'
+EVIDENCE_ENTRY_POINT = 'ovos-evidence-solver-bm25=ovos_bm25_solver:BM25SolverPlugin'
+RERANKER_ENTRY_POINT = 'ovos-choice-solver-bm25=ovos_bm25_solver:BM25MultipleChoiceSolver'
 
 setup(
     name='ovos-solver-bm25-plugin',
