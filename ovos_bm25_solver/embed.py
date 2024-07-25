@@ -1,11 +1,11 @@
 from typing import List, Tuple, Union, Optional, Dict
 
 from json_database import JsonStorageXDG
-from ovos_plugin_manager.templates.embeddings import EmbeddingsDB, TextEmbeddingsStore, EmbeddingsTuple
 from ovos_utils.log import LOG
 from ovos_utils.parse import MatchStrategy, fuzzy_match, match_all
 
 from ovos_bm25_solver import BM25CorpusSolver
+from ovos_plugin_manager.templates.embeddings import EmbeddingsDB, TextEmbeddingsStore
 
 
 class JsonEmbeddingsDB(EmbeddingsDB):
@@ -30,7 +30,7 @@ class JsonEmbeddingsDB(EmbeddingsDB):
         """
         return list(self.corpus.keys())
 
-    def add_embeddings(self, key: str, metadata: Optional[Dict[str, any]] = None) -> str:
+    def add_embeddings(self, key: str, _, metadata: Optional[Dict[str, any]] = None) -> str:
         """Add or update an embedding in the database.
 
         Args:
@@ -56,7 +56,7 @@ class JsonEmbeddingsDB(EmbeddingsDB):
         if key in self.corpus:
             return self.corpus.pop(key)
 
-    def get_embedding(self, key: str) -> Optional[Dict[str, any]]:
+    def get_embeddings(self, key: str) -> Optional[Dict[str, any]]:
         """Retrieve an embedding from the database.
 
         Args:
@@ -78,8 +78,11 @@ class JsonEmbeddingsDB(EmbeddingsDB):
         Returns:
             List[Tuple[str, float]]: A list of tuples containing the matched document and the similarity score.
         """
-        return match_all(embedding, self.documents,
-                         strategy=MatchStrategy.DAMERAU_LEVENSHTEIN_SIMILARITY)[:top_k]
+        matches: List[Tuple[str, float]] = match_all(embedding, self.documents,
+                                                     strategy=MatchStrategy.DAMERAU_LEVENSHTEIN_SIMILARITY)[:top_k]
+        if return_metadata:
+            return [(k, v, self.get_embeddings(k)) for k, v in matches]
+        return matches
 
 
 class BM25TextEmbeddingsStore(TextEmbeddingsStore):
@@ -99,8 +102,6 @@ class BM25TextEmbeddingsStore(TextEmbeddingsStore):
         super().__init__(db)
         if not isinstance(self.db, JsonEmbeddingsDB):
             raise ValueError("'db' should be a JsonEmbeddingsDB instance")
-        self.bm25 = BM25CorpusSolver()
-        self.bm25.load_corpus(self.db.documents)
 
     def get_text_embeddings(self, text: str) -> str:
         """Convert text to its corresponding embeddings.
@@ -124,11 +125,14 @@ class BM25TextEmbeddingsStore(TextEmbeddingsStore):
         Returns:
             List[Tuple[str, float, Optional[Dict[str, any]]]]: A list of tuples containing the document, score, and optionally metadata.
         """
+
+        bm25 = BM25CorpusSolver()
+        bm25.load_corpus(self.db.documents)
         if return_metadata:
-            return [(txt, conf, self.db[txt]) for conf, txt in
-                    self.bm25.retrieve_from_corpus(document, k=top_k)]
+            return [(txt, conf, self.db.get_embeddings(txt)) for conf, txt in
+                    bm25.retrieve_from_corpus(document, k=top_k)]
         return [(txt, conf) for conf, txt in
-                self.bm25.retrieve_from_corpus(document, k=top_k)]
+                bm25.retrieve_from_corpus(document, k=top_k)]
 
     def distance(self, text_a: str, text_b: str,
                  metric: MatchStrategy = MatchStrategy.DAMERAU_LEVENSHTEIN_SIMILARITY) -> float:
