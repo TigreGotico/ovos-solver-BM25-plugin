@@ -8,14 +8,22 @@ from ovos_bm25_solver.corpus import BM25CorpusSolver
 
 
 class BM25MultipleChoiceSolver(MultipleChoiceSolver):
-    """select best answer to a question from a list of options """
+    """Select the best answer to a question from a list of options using BM25 ranking."""
 
-    # plugin methods to override
     def rerank(self, query: str, options: List[str],
                lang: Optional[str] = None,
                return_index: bool = False) -> List[Tuple[float, Union[str, int]]]:
         """
-        rank options list, returning a list of tuples (score, text)
+        Rank the list of options based on their relevance to the query.
+
+        Args:
+            query (str): The query to rank options against.
+            options (List[str]): A list of options to be ranked.
+            lang (Optional[str]): Optional language code for translation.
+            return_index (bool): Whether to return the index of the options instead of the option text.
+
+        Returns:
+            List[Tuple[float, Union[str, int]]]: A list of tuples containing the score and either the option text or its index.
         """
         bm25 = BM25CorpusSolver(internal_lang=self.default_lang,
                                 translator=self.translator,
@@ -24,19 +32,25 @@ class BM25MultipleChoiceSolver(MultipleChoiceSolver):
         bm25.load_corpus(options)
         ranked: List[Tuple[float, str]] = list(bm25.retrieve_from_corpus(query, lang=lang, k=len(options)))
         if return_index:
-            ranked: List[Tuple[float, int]] = [(r[0], options.index(r[1]))
-                                               for r in ranked]
+            ranked = [(r[0], options.index(r[1])) for r in ranked]
         return ranked
 
 
 class BM25EvidenceSolverPlugin(EvidenceSolver):
-    """extract best sentence from text that answers the question, using BM25 algorithm"""
+    """Extract the best sentence from text that answers the question using BM25 algorithm."""
 
     def get_best_passage(self, evidence: str, question: str,
-                         lang: Optional[str] = None):
+                         lang: Optional[str] = None) -> Optional[str]:
         """
-        evidence and question assured to be in self.default_lang
-         returns summary of provided document
+        Extract the most relevant passage from the evidence that answers the question.
+
+        Args:
+            evidence (str): The text to search for the answer.
+            question (str): The question to find an answer for.
+            lang (Optional[str]): Optional language code for translation.
+
+        Returns:
+            Optional[str]: The best passage that answers the question, or None if no passage is found.
         """
         bm25 = BM25MultipleChoiceSolver(internal_lang=self.default_lang,
                                         translator=self.translator,
