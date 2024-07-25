@@ -1,3 +1,4 @@
 ovos-plugin-manager
 bm25s
 quebra-frases
+rapidfuzz
