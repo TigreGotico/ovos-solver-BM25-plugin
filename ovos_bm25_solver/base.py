@@ -1,10 +1,10 @@
 from typing import List, Optional, Union, Tuple
 
-from ovos_plugin_manager.templates.solvers import MultipleChoiceSolver, EvidenceSolver
 from ovos_utils.log import LOG
 from quebra_frases import sentence_tokenize
 
 from ovos_bm25_solver.corpus import BM25CorpusSolver
+from ovos_plugin_manager.templates.solvers import MultipleChoiceSolver, EvidenceSolver
 
 
 class BM25MultipleChoiceSolver(MultipleChoiceSolver):
@@ -25,12 +25,15 @@ class BM25MultipleChoiceSolver(MultipleChoiceSolver):
         Returns:
             List[Tuple[float, Union[str, int]]]: A list of tuples containing the score and either the option text or its index.
         """
-        bm25 = BM25CorpusSolver(internal_lang=self.default_lang,
-                                translator=self.translator,
-                                detector=self.detector,
-                                enable_tx=self.enable_tx)
+        bm25 = BM25CorpusSolver(internal_lang=lang or self.default_lang)
+        if self.enable_tx:  # share objects to avoid re-init
+            bm25._detector = self.detector
+            bm25._translator = self.translator
+            bm25.enable_tx = self.enable_tx
         bm25.load_corpus(options)
-        ranked: List[Tuple[float, str]] = list(bm25.retrieve_from_corpus(query, lang=lang, k=len(options)))
+        ranked: List[Tuple[float, str]] = list(bm25.retrieve_from_corpus(query,
+                                                                         lang=lang or self.default_lang,
+                                                                         k=len(options)))
         if return_index:
             ranked = [(r[0], options.index(r[1])) for r in ranked]
         return ranked
@@ -53,9 +56,11 @@ class BM25EvidenceSolverPlugin(EvidenceSolver):
             Optional[str]: The best passage that answers the question, or None if no passage is found.
         """
         bm25 = BM25MultipleChoiceSolver(internal_lang=self.default_lang,
-                                        translator=self.translator,
-                                        detector=self.detector,
-                                        enable_tx=self.enable_tx)
+                                        lang=self.default_lang)
+        if self.enable_tx:  # share objects to avoid re-init
+            bm25._detector = self.detector
+            bm25._translator = self.translator
+            bm25.enable_tx = self.enable_tx
         sents = []
         for s in evidence.split("\n"):
             sents += sentence_tokenize(s)
