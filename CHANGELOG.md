@@ -1,20 +1,12 @@
 # Changelog
 
-## [0.0.0a2](https://github.com/TigreGotico/ovos-solver-BM25-plugin/tree/0.0.0a2) (2024-10-25)
+## [0.0.1a1](https://github.com/TigreGotico/ovos-solver-BM25-plugin/tree/0.0.1a1) (2025-03-27)
 
-[Full Changelog](https://github.com/TigreGotico/ovos-solver-BM25-plugin/compare/63ffca0c8da0518181a06213c07f2806e8c3b469...0.0.0a2)
-
-**Implemented enhancements:**
-
-- feat/text\_fake\_embeddings\_store [\#5](https://github.com/TigreGotico/ovos-solver-BM25-plugin/pull/5) ([JarbasAl](https://github.com/JarbasAl))
-- feat/add\_rerank\_solver [\#4](https://github.com/TigreGotico/ovos-solver-BM25-plugin/pull/4) ([JarbasAl](https://github.com/JarbasAl))
-- feat/squad\_demo\_solver [\#3](https://github.com/TigreGotico/ovos-solver-BM25-plugin/pull/3) ([JarbasAl](https://github.com/JarbasAl))
-- feat/qa\_solver [\#2](https://github.com/TigreGotico/ovos-solver-BM25-plugin/pull/2) ([JarbasAl](https://github.com/JarbasAl))
-- fea/initial\_implementation [\#1](https://github.com/TigreGotico/ovos-solver-BM25-plugin/pull/1) ([JarbasAl](https://github.com/JarbasAl))
+[Full Changelog](https://github.com/TigreGotico/ovos-solver-BM25-plugin/compare/0.0.0...0.0.1a1)
 
 **Merged pull requests:**
 
-- feat:semver [\#6](https://github.com/TigreGotico/ovos-solver-BM25-plugin/pull/6) ([JarbasAl](https://github.com/JarbasAl))
+- fix: dont load translator/detector if not needed [\#8](https://github.com/TigreGotico/ovos-solver-BM25-plugin/pull/8) ([JarbasAl](https://github.com/JarbasAl))
 
 
 

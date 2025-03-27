@@ -1,4 +1,4 @@
-ovos-plugin-manager
+ovos-plugin-manager>=0.8.5
 bm25s
 quebra-frases
 rapidfuzz
