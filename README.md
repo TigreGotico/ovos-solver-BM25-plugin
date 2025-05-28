@@ -1,4 +1,6 @@
-# BM25CorpusSolver Plugin
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/TigreGotico/ovos-solver-BM25-plugin)
+
+# BM25 Solver Plugin
 
 BM25CorpusSolver is an OVOS (OpenVoiceOS) plugin designed to retrieve answers from a corpus of documents using the [BM25](https://en.wikipedia.org/wiki/Okapi_BM25)
 algorithm. This solver is ideal for question-answering systems that require efficient and accurate retrieval of
