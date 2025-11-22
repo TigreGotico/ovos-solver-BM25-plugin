@@ -50,7 +50,7 @@ SOLVER_ENTRY_POINTS = [
 ]
 EVIDENCE_ENTRY_POINT = 'ovos-evidence-solver-bm25=ovos_bm25_solver:BM25SolverPlugin'
 RERANKER_ENTRY_POINT = 'ovos-choice-solver-bm25=ovos_bm25_solver:BM25MultipleChoiceSolver'
-SUMMARIZER_ENTRY_POINT = 'ovos-choice-solver-bm25=ovos_bm25_solver:BM25SummarizerPlugin'
+SUMMARIZER_ENTRY_POINT = 'ovos-summarizer-bm25=ovos_bm25_solver:BM25SummarizerPlugin'
 
 setup(
     name='ovos-solver-bm25-plugin',
