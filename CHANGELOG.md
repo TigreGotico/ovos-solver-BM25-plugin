@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.0a2](https://github.com/TigreGotico/ovos-solver-BM25-plugin/tree/0.1.0a2) (2025-11-22)
+
+[Full Changelog](https://github.com/TigreGotico/ovos-solver-BM25-plugin/compare/0.1.0a1...0.1.0a2)
+
+**Merged pull requests:**
+
+- fix: entrypoint [\#16](https://github.com/TigreGotico/ovos-solver-BM25-plugin/pull/16) ([JarbasAl](https://github.com/JarbasAl))
+
 ## [0.1.0a1](https://github.com/TigreGotico/ovos-solver-BM25-plugin/tree/0.1.0a1) (2025-11-22)
 
 [Full Changelog](https://github.com/TigreGotico/ovos-solver-BM25-plugin/compare/0.0.2a2...0.1.0a1)
