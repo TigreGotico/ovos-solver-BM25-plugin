@@ -1,10 +1,10 @@
 from typing import Optional, Dict
 
 import requests
-from ovos_plugin_manager.templates.language import LanguageTranslator, LanguageDetector
 from ovos_utils.log import LOG
 
-from ovos_bm25_solver.corpus import BM25QACorpusSolver
+from ovos_bm25_solver import BM25QACorpusSolver
+from ovos_plugin_manager.templates.language import LanguageTranslator, LanguageDetector
 
 
 ## Demo subclasses
