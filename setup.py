@@ -50,6 +50,7 @@ SOLVER_ENTRY_POINTS = [
 ]
 EVIDENCE_ENTRY_POINT = 'ovos-evidence-solver-bm25=ovos_bm25_solver:BM25SolverPlugin'
 RERANKER_ENTRY_POINT = 'ovos-choice-solver-bm25=ovos_bm25_solver:BM25MultipleChoiceSolver'
+SUMMARIZER_ENTRY_POINT = 'ovos-choice-solver-bm25=ovos_bm25_solver:BM25SummarizerPlugin'
 
 setup(
     name='ovos-solver-bm25-plugin',
@@ -63,6 +64,7 @@ setup(
     zip_safe=True,
     keywords='OVOS openvoiceos plugin utterance fallback query',
     entry_points={'opm.solver.question': SOLVER_ENTRY_POINTS,
+                  "opm.solver.summarization": SUMMARIZER_ENTRY_POINT,
                   "opm.solver.reading_comprehension": EVIDENCE_ENTRY_POINT,
                   "opm.solver.multiple_choice": RERANKER_ENTRY_POINT},
     install_requires=required("requirements.txt"),

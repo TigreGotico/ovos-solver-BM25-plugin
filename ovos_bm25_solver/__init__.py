@@ -6,7 +6,7 @@ from quebra_frases import sentence_tokenize
 
 from ovos_plugin_manager.templates.language import LanguageTranslator, LanguageDetector
 from ovos_plugin_manager.templates.solvers import MultipleChoiceSolver, EvidenceSolver
-from ovos_plugin_manager.templates.solvers import QACorpusSolver, CorpusSolver
+from ovos_plugin_manager.templates.solvers import QACorpusSolver, CorpusSolver, TldrSolver
 
 
 class BM25CorpusSolver(CorpusSolver):
@@ -188,3 +188,57 @@ class BM25EvidenceSolverPlugin(EvidenceSolver):
             sents += sentence_tokenize(s)
         sents = [s.strip() for s in sents if s]
         return bm25.select_answer(question, sents, lang=lang)
+
+
+class BM25SummarizerPlugin(TldrSolver):
+    """Selects top_k sentences from a document using BM25 algorithm."""
+
+    def get_tldr(self, document: str, lang: Optional[str] = None) -> str:
+        """
+        Summarize the provided document by returning the top k paragraphs most similar tto the document itself
+
+        :param document: The text to summarize, assured to be in the default language.
+        :param lang: Optional language code.
+        :return: A summary of the provided document.
+        """
+        chunks = document.split("\n\n")
+
+        bm25 = BM25CorpusSolver(internal_lang=lang or self.default_lang)
+        if self.enable_tx:  # share objects to avoid re-init
+            bm25._detector = self.detector
+            bm25._translator = self.translator
+            bm25.enable_tx = self.enable_tx
+        bm25.load_corpus(chunks)
+
+        ranked: List[Tuple[float, str]] = list(
+            bm25.retrieve_from_corpus(
+                document,
+                lang=lang or self.default_lang,
+                k=3
+            )
+        )
+
+        return "\n\n".join([r[1] for r in ranked])
+
+
+if __name__ == "__main__":
+
+    with open("../ovos-technical-manual/docs/150-personas.md") as f:
+        big_text = f.read()
+
+    summary = BM25SummarizerPlugin().tldr(big_text, lang="en")
+
+    print(summary)
+    # | Component            | Role                                                         |
+    # |----------------------|--------------------------------------------------------------|
+    # | **Solver Plugin**    | Stateless text-to-text inference (e.g., Q&A, summarization). |
+    # | **Persona**          | Named agent composed of ordered solver plugins.              |
+    # | **Persona Server**   | Expose personas to other Ollama/OpenAI compatible projects.  |
+    # | **Persona Pipeline** | Handles persona activation and routing inside OVOS core.     |
+    #
+    # Within `ovos-core`, the **[persona-pipeline](https://github.com/OpenVoiceOS/ovos-persona)** plugin handles all runtime logic for managing user interaction with AI agents.
+    #
+    # ### Key Features:
+    # - **Composition**: Each persona consists of a name, a list of solver plugins, and optional configuration for each.
+    # - **Chained Execution**: When a user question is received, the persona tries solvers one by one. If the first solver fails (returns `None`), the next one is tried until a response is generated.
+    # - **Customizable Behavior**: Different personas can emulate different personalities or knowledge domains by varying their solver stack.
