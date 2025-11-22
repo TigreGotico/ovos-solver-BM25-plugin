@@ -1,4 +1,4 @@
-from typing import Optional, Dict, Any
+from typing import Optional, Dict
 
 import requests
 from ovos_plugin_manager.templates.language import LanguageTranslator, LanguageDetector
