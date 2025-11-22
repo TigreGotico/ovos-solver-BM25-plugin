@@ -18,15 +18,12 @@ information from a predefined set of documents.
 - [ReRanking](#reranking)
    - [BM25MultipleChoiceSolver](#bm25multiplechoicesolver)
    - [BM25EvidenceSolverPlugin](#bm25evidencesolverplugin)
-- [Embeddings Store](#embeddings-store)
 - [Integrating with Persona Framework](#integrating-with-persona-framework)
 
 
 ## Features
 
 - **BM25 Algorithm**: Utilizes the BM25 ranking function for information retrieval, providing relevance-based document scoring.
-- **Configurable**: Allows customization of language, minimum confidence score, and the number of answers to retrieve.
-- **Logging**: Integrates with OVOS logging system for debugging and monitoring.
 - **BM25QACorpusSolver**: Extends `BM25CorpusSolver` to handle question-answer pairs, optimizing the retrieval process for QA datasets.
 - **BM25MultipleChoiceSolver**: Reranks multiple-choice options based on relevance to the query.
 - **BM25EvidenceSolverPlugin**: Extracts the best sentence from a text that answers a question using the BM25 algorithm.
@@ -265,36 +262,6 @@ print("Answer:", answer)
 In this example, `BM25EvidenceSolverPlugin` effectively identifies and retrieves the most relevant sentence from the provided text that answers the query about the number of rovers exploring Mars. 
 This capability is essential for applications requiring information extraction from extensive textual content, such as automated research assistants or content summarizers.
 
-## Embeddings Store
-
-A fake embeddings store is provided using only text search
-
-> NOTE: this does not scale to large datasets
-
-```python
-from ovos_bm25_solver.embed import JsonEmbeddingsDB, BM25TextEmbeddingsStore
-db = JsonEmbeddingsDB("bm25_index")
-# Initialize the BM25 text embeddings store
-index = BM25TextEmbeddingsStore(db=db)
-
-# Add documents to the database
-text = "hello world"
-text2 = "goodbye cruel world"
-index.add_document(text)
-index.add_document(text2)
-
-# Querying with fuzzy match
-results = db.query("the world", top_k=2)
-print("Fuzzy Match Results:", results)
-
-# Querying with BM25
-results = index.query("the world", top_k=2)
-print("BM25 Query Results:", results)
-
-# Comparing strings using fuzzy match
-distance = index.distance(text, text2)
-print("Distance between strings:", distance)
-```
 
 ## Integrating with Persona Framework
 
