@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.1a2](https://github.com/TigreGotico/ovos-solver-BM25-plugin/tree/0.1.1a2) (2025-12-18)
+
+[Full Changelog](https://github.com/TigreGotico/ovos-solver-BM25-plugin/compare/0.1.1a1...0.1.1a2)
+
+**Merged pull requests:**
+
+- chore: Configure Renovate [\#20](https://github.com/TigreGotico/ovos-solver-BM25-plugin/pull/20) ([renovate[bot]](https://github.com/apps/renovate))
+
 ## [0.1.1a1](https://github.com/TigreGotico/ovos-solver-BM25-plugin/tree/0.1.1a1) (2025-11-22)
 
 [Full Changelog](https://github.com/TigreGotico/ovos-solver-BM25-plugin/compare/0.1.0...0.1.1a1)
