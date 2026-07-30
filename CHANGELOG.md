@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.1a3](https://github.com/TigreGotico/ovos-solver-BM25-plugin/tree/0.1.1a3) (2026-07-30)
+
+[Full Changelog](https://github.com/TigreGotico/ovos-solver-BM25-plugin/compare/0.1.1a2...0.1.1a3)
+
+**Merged pull requests:**
+
+- docs: rewrite README in Simplified Technical English [\#28](https://github.com/TigreGotico/ovos-solver-BM25-plugin/pull/28) ([JarbasAl](https://github.com/JarbasAl))
+
 ## [0.1.1a2](https://github.com/TigreGotico/ovos-solver-BM25-plugin/tree/0.1.1a2) (2025-12-18)
 
 [Full Changelog](https://github.com/TigreGotico/ovos-solver-BM25-plugin/compare/0.1.1a1...0.1.1a2)
