@@ -2,21 +2,25 @@
 
 # BM25 OpenVoiceOS Plugin
 
-An OVOS (OpenVoiceOS) plugin designed to retrieve answers from a corpus of documents using the [BM25](https://en.wikipedia.org/wiki/Okapi_BM25) algorithm. 
+This is an OVOS (OpenVoiceOS) plugin. It retrieves answers from a corpus of documents with the [BM25](https://en.wikipedia.org/wiki/Okapi_BM25) algorithm.
 
-This plugin provides a lightweight baseline for various tasks (reranking, summarization, machine comprehension, retrieval)
+The plugin gives a lightweight baseline for several tasks: reranking, summarization, machine comprehension, and retrieval.
+
+## Install
+
+```bash
+$ pip install ovos-solver-bm25-plugin
+```
 
 ---
 
 ### ReRanking
 
-ReRanking is a technique used to refine a list of potential answers by evaluating their relevance to a given query.
-This process is crucial in scenarios where multiple options or responses need to be assessed to determine the most
-appropriate one.
+Reranking refines a list of candidate answers by their relevance to a query. Use it when several candidate responses exist and you need to pick the best one.
 
 ![reranker diagram](https://github.com/user-attachments/assets/61c5034b-e54f-434a-8cbf-e967154af983)
 
-The solver ranks these options based on their similarity to the query itself and selects the most suitable one.
+The solver ranks the candidates by their similarity to the query and selects the best match.
 
 ```python
 from ovos_bm25_solver import BM25MultipleChoiceSolver
@@ -43,14 +47,11 @@ print(a)  # the speed of light is C
 
 #### Machine Comprehension
 
-In text extraction and machine comprehension tasks, BM25EvidenceSolverPlugin enables the identification of specific
-sentences within a larger body of text that directly address a user's query.
+`BM25EvidenceSolverPlugin` finds the sentence in a larger text that answers a user query. It scans the given passage, ranks each sentence by relevance, and returns the most informative one.
 
-For example, in a scenario where a user queries about the number of rovers exploring Mars, BM25EvidenceSolverPlugin
-scans the provided text passage, ranks sentences based on their relevance, and extracts the most informative sentence.
+For example, when a user asks how many rovers explore Mars, the solver scans the passage below and returns the sentence that names the rovers.
 
 ![evidence solver diagram](https://github.com/user-attachments/assets/d789d3ce-b425-405c-8ae1-3ff495817507)
-
 
 ```python
 from ovos_bm25_solver import BM25EvidenceSolverPlugin
@@ -82,16 +83,13 @@ print("Answer:", answer)
 
 ```
 
-In this example, `BM25EvidenceSolverPlugin` effectively identifies and retrieves the most relevant sentence from the
-provided text that answers the query about the number of rovers exploring Mars.
-This capability is essential for applications requiring information extraction from extensive textual content, such as
-automated research assistants or content summarizers.
+In this example, `BM25EvidenceSolverPlugin` finds and returns the sentence that names the number of rovers exploring Mars. Use this capability for information extraction from long text, such as a research assistant or a content summarizer.
 
 ---
 
 ## Summarizer
 
-The `BM25SummarizerPlugin` performs extractive summarization by ranking and returning the most relevant sentences from the text, effectively generating a concise overview.
+`BM25SummarizerPlugin` performs extractive summarization. It ranks the sentences in a text and returns the most relevant ones as a concise overview.
 
 ![summarizer diagram](https://github.com/user-attachments/assets/416e0eb9-0da9-4515-9c69-7667fb878ba5)
 
@@ -127,14 +125,13 @@ print(summary)
 
 ## Retrieval Chatbots (Custom Knowledge Base)
 
-Retrieval chatbots use BM25CorpusSolver to provide answers to user queries by searching through a preloaded corpus of
-documents or QA pairs.
+Retrieval chatbots use `BM25CorpusSolver` to answer user queries by searching a preloaded corpus of documents or QA pairs.
 
-This package is meant to be used to create your own solvers with a dedicated corpus.
+Use this package to build your own solver with a dedicated corpus.
 
 ### Using `BM25CorpusSolver`
 
-To use the BM25CorpusSolver, you need to create an instance of the solver, load your corpus, and then query it.
+To use `BM25CorpusSolver`, create an instance of the solver, load your corpus, and query it.
 
 ```python
 from ovos_bm25_solver import BM25CorpusSolver
@@ -168,7 +165,7 @@ print(answer)
 
 ### Using `BM25QACorpusSolver` (Question/Answer Pairs)
 
-This specialized solver matches the user's question to a question in the corpus and returns the corresponding answer.
+`BM25QACorpusSolver` matches a user question to a question in the corpus and returns the matching answer.
 
 ```python
 import requests
@@ -216,37 +213,27 @@ print("Answer:", answer)
 # Answer: similar to Antarctic
 ```
 
-In this example, BM25QACorpusSolver is used to load a large corpus of question-answer pairs from the SQuAD and
-FreebaseQA datasets. The solver retrieves the best matching answer for the given query.
+In this example, `BM25QACorpusSolver` loads a large corpus of question-answer pairs from the SQuAD and FreebaseQA datasets, then retrieves the best matching answer for the query.
 
 ### Limitations of Retrieval Chatbots
 
-Retrieval chatbots, while powerful, have certain limitations. These include:
+Retrieval chatbots have these limitations:
 
-1. **Dependence on Corpus Quality and Size**: The accuracy of a retrieval chatbot heavily relies on the quality and
-   comprehensiveness of the underlying corpus. A limited or biased corpus can lead to inaccurate or irrelevant
-   responses.
-2. **Static Knowledge Base**: Unlike generative models, retrieval chatbots can't generate new information or answers.
-   They can only retrieve and rephrase content from the pre-existing corpus.
-3. **Contextual Understanding**: While advanced algorithms like BM25 can rank documents based on relevance, they may
-   still struggle with understanding nuanced or complex queries, especially those requiring deep contextual
-   understanding.
-4. **Scalability**: As the size of the corpus increases, the computational resources required for indexing and
-   retrieving relevant documents also increase, potentially impacting performance.
-5. **Dynamic Updates**: Keeping the corpus updated with the latest information can be challenging, especially in
-   fast-evolving domains.
+1. **Dependence on Corpus Quality and Size**: Accuracy depends on the quality and coverage of the corpus. A limited or biased corpus gives inaccurate or irrelevant answers.
+2. **Static Knowledge Base**: Unlike generative models, retrieval chatbots cannot generate new information. They only retrieve and rephrase content already in the corpus.
+3. **Contextual Understanding**: BM25 ranks documents by relevance, but it can fail on nuanced or complex queries that need deep context.
+4. **Scalability**: As the corpus grows, indexing and retrieval need more computational resources, which can affect performance.
+5. **Dynamic Updates**: Keeping the corpus current is hard in fast-changing domains.
 
-Despite these limitations, retrieval chatbots are effective for domains where the corpus is well-defined and relatively
-static, such as FAQs, documentation, and knowledge bases.
+Despite these limits, retrieval chatbots work well for domains with a well-defined, mostly static corpus, such as FAQs, documentation, and knowledge bases.
 
 ### Example solvers
 
 #### SquadQASolver
 
-The SquadQASolver is a subclass of BM25QACorpusSolver that automatically loads and indexes
-the [SQuAD dataset](https://rajpurkar.github.io/SQuAD-explorer/) upon initialization.
+`SquadQASolver` is a subclass of `BM25QACorpusSolver`. It loads and indexes the [SQuAD dataset](https://rajpurkar.github.io/SQuAD-explorer/) on initialization.
 
-This solver is suitable for usage with the ovos-persona framework.
+Use this solver with the ovos-persona framework.
 
 ```python
 from ovos_bm25_solver import SquadQASolver
@@ -265,10 +252,9 @@ print("Answer:", s.spoken_answer(query))
 
 #### FreebaseQASolver
 
-The FreebaseQASolver is a subclass of BM25QACorpusSolver that automatically loads and indexes
-the [FreebaseQA dataset](https://github.com/kelvin-jiang/FreebaseQA) upon initialization.
+`FreebaseQASolver` is a subclass of `BM25QACorpusSolver`. It loads and indexes the [FreebaseQA dataset](https://github.com/kelvin-jiang/FreebaseQA) on initialization.
 
-This solver is suitable for usage with the ovos-persona framework.
+Use this solver with the ovos-persona framework.
 
 ```python
 from ovos_bm25_solver import FreebaseQASolver
@@ -288,11 +274,9 @@ print("Answer:", s.spoken_answer(query))
 
 ## Integrating with Persona Framework
 
-While this library is intended to use with your own corpus, it is possible to use the `SquadQASolver` and
-`FreebaseQASolver` in the persona framework, you can define a persona configuration file and specify the solvers to be
-used.
+This library is meant for use with your own corpus. You can also use `SquadQASolver` and `FreebaseQASolver` in the persona framework by defining a persona configuration file and listing the solvers to use.
 
-Here's an example of how to define a persona that uses the `SquadQASolver` and `FreebaseQASolver`:
+Here is an example of a persona that uses `SquadQASolver` and `FreebaseQASolver`:
 
 1. Create a persona configuration file, e.g., `qa_persona.json`:
 
@@ -313,11 +297,9 @@ Here's an example of how to define a persona that uses the `SquadQASolver` and `
 $ ovos-persona-server --persona qa_persona.json
 ```
 
-In this example, the persona named "QAPersona" will first use the `SquadQASolver` to answer questions. If it cannot find
-an answer, it will fall back to the `FreebaseQASolver`. Finally, it will use the `ovos-solver-failure-plugin` to ensure
-it always responds with something, even if the previous solvers fail.
+In this example, the persona named "QAPersona" tries `SquadQASolver` first. If it finds no answer, it falls back to `FreebaseQASolver`. If both fail, `ovos-solver-failure-plugin` gives a fallback response so the persona always replies.
 
-Check setup.py for reference in how to package your own corpus backed solvers
+Check `setup.py` for reference on how to package your own corpus-backed solvers:
 
 ```python
 PLUGIN_ENTRY_POINTS = [
@@ -325,6 +307,17 @@ PLUGIN_ENTRY_POINTS = [
     'ovos-solver-bm25-freebase-plugin=ovos_bm25_solver:FreebaseQASolver'
 ]
 ```
+
+---
+
+## Related Projects
+
+- [OpenVoiceOS/ovos-persona](https://github.com/OpenVoiceOS/ovos-persona) — the persona pipeline that runs solver plugins inside `ovos-core`.
+- [OpenVoiceOS/ovos-persona-server](https://github.com/OpenVoiceOS/ovos-persona-server) — exposes personas over an Ollama/OpenAI-compatible API.
+
+## License
+
+This project is under the MIT license (see `setup.py`).
 
 ---
 
