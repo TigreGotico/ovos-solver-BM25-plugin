@@ -201,7 +201,7 @@ class BM25SummarizerPlugin(TldrSolver):
         :param lang: Optional language code.
         :return: A summary of the provided document.
         """
-        chunks = document.split("\n\n")
+        chunks = sentence_tokenize(document)
 
         bm25 = BM25CorpusSolver(internal_lang=lang or self.default_lang)
         if self.enable_tx:  # share objects to avoid re-init
